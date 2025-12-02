@@ -253,6 +253,43 @@
         color: var(--muted);
         font-size: 14px;
       }
+      .team-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+        margin-top: 10px;
+      }
+      .team-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 14px;
+        box-shadow: var(--shadow);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .team-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+        border: 1px dashed rgba(255, 255, 255, 0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .team-text h3 {
+        margin: 0 0 4px;
+        font-size: 16px;
+      }
+      .team-text p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
       .steps {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -383,6 +420,7 @@
             <a href="#how">How it works</a>
             <a href="#demo">Live demo</a>
             <a href="#usecases">Use cases</a>
+            <a href="#team">Team</a>
             <a href="#contact">Contact</a>
             <button class="nav-cta" onclick="document.getElementById('demo').scrollIntoView({ behavior: 'smooth' })">
               Try the demo
@@ -549,6 +587,41 @@
             <div class="card">
               <h3>Future modules</h3>
               <p>Add near-real-time feeds or short-term forecasting without reworking the stack.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="team">
+          <h2>Team</h2>
+          <p class="lead">Four minds behind the demo; placeholder photos for now.</p>
+          <div class="team-grid">
+            <div class="team-card">
+              <div class="team-avatar">No photo</div>
+              <div class="team-text">
+                <h3>Dr. med. Selina Schwegler</h3>
+                <p>Clinical perspective · Service groups</p>
+              </div>
+            </div>
+            <div class="team-card">
+              <div class="team-avatar">No photo</div>
+              <div class="team-text">
+                <h3>Stephan Nef</h3>
+                <p>Data & analytics</p>
+              </div>
+            </div>
+            <div class="team-card">
+              <div class="team-avatar">No photo</div>
+              <div class="team-text">
+                <h3>Léon Kia Faro</h3>
+                <p>Product & design</p>
+              </div>
+            </div>
+            <div class="team-card">
+              <div class="team-avatar">No photo</div>
+              <div class="team-text">
+                <h3>Dr. med. Aresh Farokhnia</h3>
+                <p>Clinical strategy</p>
+              </div>
             </div>
           </div>
         </section>
