@@ -1,4 +1,4 @@
-# Rang 5 – Spitalliste & Leistungsauftrag-Cockpit  
+# Spitalliste & Leistungsauftrag-Cockpit  
 ## MVP DEMO – Architektur & UI-Spezifikation (Single Python / Single React)
 
 > **Ziel:** Ein visuell starkes, „fertig wirkendes“ Demo-MVP für GL/CEO.  

@@ -922,7 +922,7 @@ function App() {
     <div className="app-shell">
       <div className="topbar">
         <div>
-          <div className="eyebrow">Rang 5 - MVP Demo</div>
+          <div className="eyebrow">MVP Demo</div>
           <h1>Spitalliste & Leistungsauftrag-Cockpit</h1>
           <p className="subtitle">Strategischer Fit vs. kantonaler Bedarf - Demo-Daten</p>
         </div>

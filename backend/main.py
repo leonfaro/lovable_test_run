@@ -1,4 +1,4 @@
-"""Demo backend fuer das Rang 5 Spitalliste & Leistungsauftrag-Cockpit."""
+"""Demo backend fuer das Spitalliste & Leistungsauftrag-Cockpit."""
 from pathlib import Path
 import math
 import random
