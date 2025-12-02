@@ -33,8 +33,8 @@
 
 **Datenfluss**
 * Initial: Parallel-GET auf `/api/matrix`, `/api/dashboard`, `/api/chart`.
-* Auswahl einer Leistungsgruppe triggert GET `/api/timeseries/{id}`.
-* Szenario-Rechnung läuft im Backend (API), liefert Volumen/Deckungsgrad/CHF-Demo und passt die Forecast-Serie an.
+* Auswahl einer Leistungsgruppe triggert GET `/api/scenario/{id}?delta_percent=...` (liefert Baseline-Row, Szenario-Row, Zeitreihe und verschobene Forecast-Serie).
+* Szenario-Rechnung läuft im Backend (API), liefert Volumen/Deckungsgrad/CHF-Demo und passt die Forecast-Serie an; das Frontend nutzt nur diese Antwort.
 
 **Nicht-Ziele**
 * Keine echten Spitallisten/Daten, keine Auth, kein Persistenz-Layer, kein Build/Bundler.
