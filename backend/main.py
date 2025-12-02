@@ -1,12 +1,28 @@
 """Demo backend fuer das Rang 5 Spitalliste & Leistungsauftrag-Cockpit."""
-from typing import Dict, List
-import os
+from pathlib import Path
 import math
 import random
+from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+
+from .demo_data import (
+    HOSPITALS,
+    PLANNING_RECORDS,
+    SERVICE_GROUPS,
+    get_demand_map,
+    get_own_hospital_id,
+    get_service_group_map,
+)
+
+BASE_DIR = Path(__file__).resolve().parent
+FRONTEND_DIR = BASE_DIR.parent / "frontend"
+
+__all__ = ["app"]
+
+DEMO_DECKUNGSBEITRAG_CHF = 4500
 
 
 app = FastAPI(title="Spitalliste & Leistungsauftrag Demo", version="0.1.0")
@@ -17,87 +33,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-HOSPITALS = [
-    {"id": "H1", "name": "Kantonsspital Beispiel", "type": "own", "region": "Kanton X"},
-    {"id": "H2", "name": "Regionales Spital A", "type": "other", "region": "Kanton X"},
-    {"id": "H3", "name": "Privatklinik B", "type": "other", "region": "Kanton X"},
-]
-
-SERVICE_GROUPS = [
-    {
-        "id": "LG1",
-        "name": "Orthopaedie elektiv",
-        "category": "Orthopaedie",
-        "has_assignment": True,
-    },
-    {
-        "id": "LG2",
-        "name": "Kardiologie akut",
-        "category": "Kardiologie",
-        "has_assignment": True,
-    },
-    {
-        "id": "LG3",
-        "name": "Allgemeine Innere Medizin",
-        "category": "Medizin",
-        "has_assignment": True,
-    },
-    {
-        "id": "LG4",
-        "name": "Onkologie",
-        "category": "Onkologie",
-        "has_assignment": False,
-    },
-    {
-        "id": "LG5",
-        "name": "Neurorehab",
-        "category": "Neurologie",
-        "has_assignment": False,
-    },
-]
-
-PLANNING_RECORDS = [
-    {"service_group_id": "LG1", "hospital_id": "H1", "cases_per_year": 420},
-    {"service_group_id": "LG1", "hospital_id": "H2", "cases_per_year": 200},
-    {"service_group_id": "LG1", "hospital_id": "H3", "cases_per_year": 60},
-    {"service_group_id": "LG2", "hospital_id": "H1", "cases_per_year": 310},
-    {"service_group_id": "LG2", "hospital_id": "H3", "cases_per_year": 90},
-    {"service_group_id": "LG3", "hospital_id": "H1", "cases_per_year": 520},
-    {"service_group_id": "LG3", "hospital_id": "H2", "cases_per_year": 260},
-    {"service_group_id": "LG3", "hospital_id": "H3", "cases_per_year": 140},
-    {"service_group_id": "LG4", "hospital_id": "H1", "cases_per_year": 110},
-    {"service_group_id": "LG4", "hospital_id": "H2", "cases_per_year": 180},
-    {"service_group_id": "LG5", "hospital_id": "H1", "cases_per_year": 75},
-    {"service_group_id": "LG5", "hospital_id": "H3", "cases_per_year": 95},
-]
-
-DEMAND_PER_SERVICE_GROUP = [
-    {"service_group_id": "LG1", "planned_cases_per_year": 600},
-    {"service_group_id": "LG2", "planned_cases_per_year": 380},
-    {"service_group_id": "LG3", "planned_cases_per_year": 900},
-    {"service_group_id": "LG4", "planned_cases_per_year": 250},
-    {"service_group_id": "LG5", "planned_cases_per_year": 180},
-]
-
-
-def get_service_group_map() -> Dict[str, Dict]:
-    return {sg["id"]: sg for sg in SERVICE_GROUPS}
-
-
-def get_demand_map() -> Dict[str, int]:
-    return {
-        entry["service_group_id"]: entry["planned_cases_per_year"]
-        for entry in DEMAND_PER_SERVICE_GROUP
-    }
-
-
-def get_own_hospital_id() -> str:
-    for hospital in HOSPITALS:
-        if hospital.get("type") == "own":
-            return hospital["id"]
-    return HOSPITALS[0]["id"]
-
 
 def categorize_coverage(coverage_percent: float) -> str:
     if coverage_percent < 80.0:
@@ -265,6 +200,57 @@ def build_timeseries_for_service_group(service_group_id: str) -> Dict:
     }
 
 
+def apply_scenario_to_row(row: Dict, delta_percent: float) -> Dict:
+    factor = 1 + delta_percent / 100.0
+    own_cases = row["own_hospital_cases"] * factor
+    other_cases = (
+        row.get("other_hospitals_cases")
+        if row.get("other_hospitals_cases") is not None
+        else max(row["total_cases_all_hospitals"] - row["own_hospital_cases"], 0.0)
+    )
+    total_cases = own_cases + other_cases
+    planned_cases = row["planned_demand_cases"]
+    coverage_percent = (total_cases / planned_cases * 100.0) if planned_cases else 0.0
+    own_share_percent = (own_cases / total_cases * 100.0) if total_cases else 0.0
+    delta_cases = own_cases - row["own_hospital_cases"]
+    return {
+        **row,
+        "adjusted_own_cases": round(own_cases, 1),
+        "adjusted_total_cases": round(total_cases, 1),
+        "adjusted_coverage_percent": round(coverage_percent, 1),
+        "adjusted_coverage_status": categorize_coverage(coverage_percent),
+        "adjusted_own_share_percent": round(own_share_percent, 1),
+        "delta_cases": round(delta_cases, 1),
+        "delta_eur": round(delta_cases * DEMO_DECKUNGSBEITRAG_CHF, 1),
+    }
+
+
+def apply_scenario_to_timeseries(series: List[Dict], delta_percent: float) -> List[Dict]:
+    factor = 1 + delta_percent / 100.0
+    scenario_series: List[Dict] = []
+    for point in series:
+        scenario_val: Optional[float]
+        if point.get("phase") == "forecast" and point.get("forecast") is not None:
+            scenario_val = point["forecast"] * factor
+        else:
+            scenario_val = point.get("forecast")
+        scenario_series.append(
+            {
+                **point,
+                "scenario_forecast": round(scenario_val, 1) if scenario_val is not None else None,
+            }
+        )
+    return scenario_series
+
+
+def _frontend_file(filename: str, media_type: str) -> FileResponse:
+    """Serve files from the colocated frontend folder."""
+    path = FRONTEND_DIR / filename
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"File {filename} not found")
+    return FileResponse(path, media_type=media_type)
+
+
 @app.get("/")
 def root() -> FileResponse:
     return get_index()
@@ -303,17 +289,41 @@ def get_all_timeseries() -> Dict[str, Dict]:
     }
 
 
+@app.get("/api/scenario/{service_group_id}")
+def get_scenario(
+    service_group_id: str, delta_percent: float = 0.0, include_timeseries: bool = True
+) -> Dict:
+    matrix_rows = build_matrix_rows()
+    base_row = next(
+        (row for row in matrix_rows if row["service_group_id"] == service_group_id), None
+    )
+    if not base_row:
+        raise HTTPException(status_code=404, detail=f"Service group {service_group_id} not found")
+
+    payload: Dict = {
+        "delta_percent": delta_percent,
+        "service_group": base_row,
+        "scenario": apply_scenario_to_row(base_row, delta_percent),
+    }
+    if include_timeseries:
+        timeseries = build_timeseries_for_service_group(service_group_id)
+        payload["timeseries"] = timeseries
+        payload["scenario_timeseries"] = {
+            **timeseries,
+            "series": apply_scenario_to_timeseries(timeseries["series"], delta_percent),
+        }
+    return payload
+
+
 @app.get("/App.jsx")
 def get_frontend_bundle() -> FileResponse:
     """Serve the frontend SPA file with proper JS MIME."""
-    path = os.path.join(os.path.dirname(__file__), "App.jsx")
-    return FileResponse(path, media_type="application/javascript")
+    return _frontend_file("App.jsx", media_type="application/javascript")
 
 
 @app.get("/index.html")
 def get_index() -> FileResponse:
-    path = os.path.join(os.path.dirname(__file__), "index.html")
-    return FileResponse(path, media_type="text/html")
+    return _frontend_file("index.html", media_type="text/html")
 
 
 @app.get("/frontend")

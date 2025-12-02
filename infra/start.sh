@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BACKEND_PORT=8000
+BACKEND_PORT="${BACKEND_PORT:-8000}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "${SCRIPT_DIR}"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+BACKEND_DIR="${ROOT_DIR}/backend"
+
+cd "${ROOT_DIR}"
 
 kill_port() {
   local port="$1"
@@ -19,10 +22,10 @@ kill_port() {
 kill_port "${BACKEND_PORT}"
 
 echo "Installing dependencies..."
-python3 -m pip install -r "${SCRIPT_DIR}/requirements.txt"
+python3 -m pip install -r "${BACKEND_DIR}/requirements.txt"
 
 echo "Starting backend (API + Frontend) on http://localhost:${BACKEND_PORT}..."
-python3 -m uvicorn backend:app --reload --port "${BACKEND_PORT}" &
+python3 -m uvicorn backend.main:app --reload --port "${BACKEND_PORT}" &
 BACK_PID=$!
 
 cleanup() {

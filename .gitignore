@@ -1,28 +1,26 @@
-# Python
+# Python artifacts
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+.dmypy.json
+.pytype/
 
-# Virtual environments
-.venv/
-*/.venv/
-venv/
-ENV/
-
-# Temporary uploads
-.tmp.driveupload/
-.tmp.drivedownload/
-
-# Streamlit cache
-.streamlit/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Bytecode and build
-*.egg-info/
-.eggs/
+# Build / dist
 build/
 dist/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+.eggs/
+
+# Environments / OS
+.venv
+venv/
+env/
+ENV/
+.DS_Store

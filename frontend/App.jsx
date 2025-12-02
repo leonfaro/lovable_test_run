@@ -296,48 +296,6 @@ function formatCurrency(value) {
   }).format(value);
 }
 
-function coverageStatusFromPercent(coveragePercent) {
-  if (coveragePercent < 80) return "under";
-  if (coveragePercent <= 110) return "balanced";
-  if (coveragePercent <= 120) return "slightly_over";
-  return "over";
-}
-
-function computeScenario(row, deltaPercent) {
-  if (!row) return null;
-  const factor = 1 + deltaPercent / 100;
-  const ownCases = row.own_hospital_cases * factor;
-  const otherCases =
-    row.other_hospitals_cases != null
-      ? row.other_hospitals_cases
-      : Math.max(row.total_cases_all_hospitals - row.own_hospital_cases, 0);
-  const totalCases = ownCases + otherCases;
-  const coveragePercent = row.planned_demand_cases
-    ? (totalCases / row.planned_demand_cases) * 100
-    : 0;
-  const ownSharePercent = totalCases ? (ownCases / totalCases) * 100 : 0;
-  const deltaCases = ownCases - row.own_hospital_cases;
-  return {
-    ...row,
-    adjusted_own_cases: ownCases,
-    adjusted_total_cases: totalCases,
-    adjusted_coverage_percent: coveragePercent,
-    adjusted_coverage_status: coverageStatusFromPercent(coveragePercent),
-    adjusted_own_share_percent: ownSharePercent,
-    delta_cases: deltaCases,
-    delta_eur: deltaCases * DEMO_DECKUNGSBEITRAG,
-  };
-}
-
-function computeTimeseriesScenario(baseSeries, deltaPercent) {
-  if (!Array.isArray(baseSeries) || !baseSeries.length) return [];
-  const factor = 1 + deltaPercent / 100;
-  return baseSeries.map((point) => ({
-    ...point,
-    scenario_forecast: point.phase === "forecast" ? (point.forecast || 0) * factor : point.forecast,
-  }));
-}
-
 function KpiCard({ label, value, hint }) {
   return html`
     <div className="panel kpi">
@@ -828,6 +786,8 @@ function App() {
   const [matrixData, setMatrixData] = useState([]);
   const [chartData, setChartData] = useState(null);
   const [timeseriesData, setTimeseriesData] = useState(null);
+  const [scenarioTimeseries, setScenarioTimeseries] = useState(null);
+  const [scenarioRowData, setScenarioRowData] = useState(null);
   const [timeseriesLoading, setTimeseriesLoading] = useState(false);
   const [timeseriesError, setTimeseriesError] = useState("");
   const [selectedServiceGroupId, setSelectedServiceGroupId] = useState(null);
@@ -865,36 +825,43 @@ function App() {
   useEffect(() => {
     if (!selectedServiceGroupId) {
       setTimeseriesData(null);
+      setScenarioTimeseries(null);
+      setScenarioRowData(null);
       setTimeseriesError("");
       setTimeseriesLoading(false);
       return;
     }
     let active = true;
-    const fetchTimeseries = async () => {
+    const fetchScenario = async () => {
       setTimeseriesLoading(true);
       setTimeseriesError("");
       try {
-        const res = await fetch(`${API_BASE}/api/timeseries/${selectedServiceGroupId}`);
-        if (!res.ok) throw new Error("timeseries failed");
+        const res = await fetch(
+          `${API_BASE}/api/scenario/${selectedServiceGroupId}?delta_percent=${scenarioDelta}`
+        );
+        if (!res.ok) throw new Error("scenario fetch failed");
         const json = await res.json();
         if (active) {
-          setTimeseriesData(json);
-          setTimeseriesError("");
+          setTimeseriesData(json.timeseries || null);
+          setScenarioTimeseries(json.scenario_timeseries || null);
+          setScenarioRowData(json.scenario || null);
         }
       } catch (err) {
         if (!active) return;
-        console.error("timeseries fetch failed", err);
+        console.error("scenario fetch failed", err);
         setTimeseriesData(null);
-        setTimeseriesError("Konnte Zeitreihe nicht laden.");
+        setScenarioTimeseries(null);
+        setScenarioRowData(null);
+        setTimeseriesError("Konnte Zeitreihe/Szenario nicht laden.");
       } finally {
         if (active) setTimeseriesLoading(false);
       }
     };
-    fetchTimeseries();
+    fetchScenario();
     return () => {
       active = false;
     };
-  }, [selectedServiceGroupId, API_BASE]);
+  }, [selectedServiceGroupId, scenarioDelta, API_BASE]);
 
   async function loadData() {
     setLoading(true);
@@ -941,17 +908,7 @@ function App() {
 
   const selectedRow =
     matrixData.find((r) => r.service_group_id === selectedServiceGroupId) || null;
-  const scenarioRow = useMemo(
-    () => computeScenario(selectedRow, scenarioDelta),
-    [selectedRow, scenarioDelta]
-  );
-  const scenarioTimeseries = useMemo(() => {
-    if (!timeseriesData || !timeseriesData.series || !timeseriesData.series.length) return null;
-    return {
-      ...timeseriesData,
-      series: computeTimeseriesScenario(timeseriesData.series, scenarioDelta),
-    };
-  }, [timeseriesData, scenarioDelta]);
+  const scenarioRow = scenarioRowData;
   const filteredChartData = useMemo(() => {
     if (!chartData || !chartData.service_groups) return chartData;
     const ids = new Set(filteredRows.map((r) => r.service_group_id));

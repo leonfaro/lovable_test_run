@@ -1,64 +1,48 @@
-**Kapazitaetsplanung MVP - Architektur und Funktionsumfang (aktuell)**
+**Spitalliste & Leistungsauftrag MVP – Architektur und Funktionsumfang (aktuell)**
 
-* **Zielbild:** Einfaches, strategisch-taktisches Kapazitaetsmanagement (kein Live-System).
-* **Stack:** Ein Python-Backend (`server.py`, FastAPI) und ein React-Frontend (`frontend/App.jsx`)
-  ohne Build-Tooling (CDN-React, Inline-SVG-Chart).
-* **Ressourcen:** Betten, OP, Personal, Sprechstunden, Notfall.
+* **Zielbild:** Präsentationsfähiges Demo-Dashboard (strategischer Blick), keine echten Daten.
+* **Stack:** FastAPI-Backend (`backend/main.py`) + React-Single-File-Frontend (`frontend/App.jsx`), ohne Build-Tooling (CDN-React, Inline-SVG).
+* **Domain:** Leistungsgruppen nach Spitalliste, Fokus auf Deckungsgrad/Marktanteil, Szenario-Schieberegler (Backend-API).
 
-**Backend (`server.py`)**
-* FastAPI mit offenem CORS, Endpunkte:
-  * `GET /defaults` liefert Default-Konfiguration (Simulation + Ampel-Schwellen).
-  * `POST /dashboard` liefert pro Ressource horizon-aggregiertes Risiko, Status
-    (GREEN/AMBER/RED/BLUE), Entscheidungstag, Empfehlung, Top-Treiber,
-    Alt-Signale und KPI-Aggregate.
-  * `POST /timeseries` liefert Zeitreihe fuer eine Ressource + Horizont mit Plan,
-    Forecast, Kapazitaet, Gap, Status jetzt/Forecast, Entscheidungstag,
-    Empfehlung, Top-Treiber.
-* Simulation:
-  * `SimulationConfig` (Jahr, Seed, budget_growth, verweildauer_delta, op_zeiten_delta,
-    nurse_ratio, abwesenheiten, cluster_anzahl, saisonalitaet_staerke, flu_index_staerke,
-    weather_risk_staerke, datenrhythmus, today).
-  * Externe Indizes: Saisonalitaet, Flu, Wetter, Events (Gaussian/periodisch + Impulse).
-  * Interne Faktoren als Prozent-Modifier per Ressource (Verweildauer, OP-Zeiten,
-    Nurse-Ratio, Abwesenheiten, Cluster).
-  * Forecast-Assimilation: exponentiell geglaettet (alpha=0.3), Rhythmus woechentlich
-    oder monatlich.
-* Ampellogik:
-  * Schwellen: green/yellow (default 0.05/0.15), Status aus norm_gap.
-  * Empfehlungen: heuristisch je Ressource (Betten oeffnen, OP glaetten, Schichten
-    umplanen, Ueberkapazitaet vorziehen).
-* Aggregationen:
-  * Risiko je Horizont: Kurz (max), Mid (0.7*p95+0.3*mean), Lang (0.5/0.5).
-  * KPIs: Auslastung (aktuelle Woche), MAPE (Vergangenheit), Wartetage (positiver Gap),
-    Stornoquote (aus norm_gap), Pflege-Engpass (Interpol aus norm_gap Personal).
-  * Alt-Signale: Flu, Wetter, Events mit 4-stufiger Severity.
+**Backend (`backend/main.py`)**
+* FastAPI, offenes CORS, keine Persistenz/DB, Fake-Daten in-memory.
+* Endpunkte (alle GET):
+  * `/api/dashboard` – aggregierte KPIs (Deckungsgrad gesamt, Risiko-Gruppen, Auftragsanteil, Volumen-Shift) + Meta (Region/Planperiode).
+  * `/api/matrix` – je Leistungsgruppe Bedarf, Fälle gesamt/eigenes Haus, Marktanteil, Deckungsgrad, Status, Leistungsauftrag.
+  * `/api/chart` – Balken-Chart-Daten Fälle vs. Bedarf je Leistungsgruppe.
+  * `/api/timeseries/{service_group_id}` – synthetische Monatsreihen (Plan/Ist/Forecast + externer Index) für eine Gruppe.
+  * `/api/timeseries` – alle Zeitreihen gesammelt.
+  * `/health` – `{ "status": "ok" }`.
+* Liefert Frontend statisch mit aus `frontend/`: `/`, `/index.html`, `/App.jsx` (korrekte MIME-Types).
+* Datenquellen & Logik:
+  * Statische Tabellen für Spitäler, Leistungsgruppen, Planbedarf, Fälle (Mock).
+  * Kennzahlen für Deckungsgrad/Marktanteil aus In-Memory-Daten; Zeitreihe mit leichter Saisonalität/Rauschen.
+  * Coverage-Status-Klassifizierung: under <80 %, balanced ≤110 %, slightly_over ≤120 %, sonst over.
 
-**Frontend (`frontend/App.jsx` + `index.html`)**
-* Ein React-Component, kein Router, State via `useState`/`useEffect`.
-* API-Basis: `API_BASE` global oder default `http://localhost:8000`.
+**Frontend (`frontend/App.jsx` + `frontend/index.html`)**
+* Single-Page-App (React 18 über CDN, htm), Dark-Theme mit Gradients/Glassmorphism.
 * Views:
-  * Steuerleiste: Horizon, Jahr, Seed, Budget, Nurse-Ratio, Flu-Index, Schwellen.
-  * Ressourcen-Kacheln: Status, Risk %, Empfehlung; Klick setzt Fokus.
-  * KPI-Panel: Auslastung, MAPE, Wartetage, Stornoquote, Pflege-Engpass.
-  * Detail: Alert (Status jetzt -> Forecast, Entscheidungstag, Empfehlung), Top-Treiber,
-    Inline-SVG-Linienchart (Plan/Forecast/Kapazitaet).
-  * Alt-Signal-Chips (Severity-basiert).
-* Styling: Inline-CSS (dunkles Panel-Theme), keine externen Assets ausser React CDN.
+  * KPI-Leiste (Deckungsgrad gesamt, Risiko-Gruppen, Auftragsanteil, Volumen-Shift).
+  * Filter-Panel (Region/Planperiode/Perspektive/Fokus, Auftrag-Only Toggle).
+  * Matrix klickbar je Leistungsgruppe (Deckungsgrad/Marktanteil/Status).
+  * Balken-Chart „Fälle vs. Bedarf“ (Eigenes Haus vs. andere).
+  * Zeitreihen-Panel (Plan/Ist/Forecast, Forecast-Bereich ab 2025).
+  * Szenario-Panel (Status-quo/Ausbau/Rückzug Presets, Slider -50 % bis +50 %; rechnet im Backend `/api/scenario/{id}` und verschiebt Forecast-Linie/Volumina).
+  * Detailtabelle mit Suche (Bedarf, Fälle, Auftrag).
+* `API_BASE` nutzt die aktuelle Origin; bei Ein-Port-Setup keine CORS-Themen.
 
 **Datenfluss**
-* Frontend holt Defaults -> setzt State -> POST `/dashboard` mit Config+Horizon ->
-  setzt aktive Ressource -> POST `/timeseries` fuer Fokus.
-* Backend berechnet alles pro Request (keine Persistenz).
+* Initial: Parallel-GET auf `/api/matrix`, `/api/dashboard`, `/api/chart`.
+* Auswahl einer Leistungsgruppe triggert GET `/api/timeseries/{id}`.
+* Szenario-Rechnung läuft im Backend (API), liefert Volumen/Deckungsgrad/CHF-Demo und passt die Forecast-Serie an.
 
 **Nicht-Ziele**
-* Kein Streamlit, keine SVG-Exportpfade, keine Spotlight/Overlay-Logik.
-* Kein Persistenzlayer, keine Auth, keine Echtzeitfeeds, keine externen Fonts/CDNs
-  ausser React.
+* Keine echten Spitallisten/Daten, keine Auth, kein Persistenz-Layer, kein Build/Bundler.
+* Keine Export-/PDF-/CSV-Wege, kein Role-Based Access, keine Realtime-Feeds.
 
 **Betrieb (Lokal)**
-* Backend: `uvicorn server:app --reload --port 8000`
-* Frontend: `cd frontend && python3 -m http.server 3000`
-* Rauchtest: `PYTHONPYCACHEPREFIX=./__pycache__ python3 -m compileall server.py`
+* Start (Ein-Port): `./infra/start.sh` (räumt Port, pip install `backend/requirements.txt`, startet uvicorn, öffnet Browser).
+* Manuell: `pip install -r backend/requirements.txt && uvicorn backend.main:app --reload --port 8000`, dann `http://localhost:8000/index.html`.
+* Smoke-Test: `PYTHONPYCACHEPREFIX=./__pycache__ python3 -m compileall backend`.
 
-*Hinweis:* Dokument beschreibt den aktuellen Stand nach der Vereinfachung; ergaenze nur,
-falls neue Features ins Backend/Frontend kommen. Simplicity > Feature-Ballast.
+*Hinweis:* Dokument beschreibt den Stand der aktuellen Demo; bei Funktionsänderungen Backend/Frontend synchron pflegen.

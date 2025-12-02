@@ -8,37 +8,42 @@
 ## Scope & Prinzipien
 - Verkaufsdemo, kein PoC, keine echten Daten.
 - Architektur:
-  - `backend.py` – Python Mini-API mit statischen JSON-Daten, liefert auch das Frontend aus.
-  - `App.jsx` – Single-File-React-App (alle Komponenten in einer Datei).
+  - `backend/main.py` – Python Mini-API mit statischen JSON-Daten, liefert auch das Frontend aus.
+  - `frontend/App.jsx` – Single-File-React-App (alle Komponenten in einer Datei).
+  - `infra/start.sh` – Ein-Port-Startskript (pip install, uvicorn, Browser-Open).
 - UX-Fokus: Dark Mode, weiche Gradients, Glassmorphism-Cards, klarer Story-Flow („Wo sind wir über/unterversorgt?“ → „Wie groß ist das Problem?“).
 
 ## Projektstruktur
 ```
 project-root/
-  backend.py
-  App.jsx
-  index.html
+  backend/
+    main.py
+    requirements.txt
+    server.py  # Shim auf main.app
+  frontend/
+    App.jsx
+    index.html
+  infra/
+    start.sh
   README.md
-  requirements.txt
-  start.sh
-  server.py  # nur Shim, Haupt-App ist backend.py
 ```
 
-## Backend (`backend.py`)
+## Backend (`backend/main.py`)
 - FastAPI, in-memory Demo-Daten, keine DB, keine echten Spitallisten.
 - Endpunkte (alle GET):
   - `/api/dashboard` – KPI-Ebene + Meta (Region, Planperiode).
   - `/api/matrix` – Matrix je Leistungsgruppe (Bedarf, Fälle, Marktanteil, Deckungsgrad, Status, Auftrag).
   - `/api/chart` – Daten für Balken-Chart „Fälle vs. Bedarf“ (Plan vs. eigenes Haus vs. andere Häuser).
+  - `/api/scenario/{service_group_id}?delta_percent=` – berechnet Szenario-Delta (Volumen/Deckungsgrad/CHF) und liefert Zeitreihe + verschobene Forecast-Serie.
   - `/health` – einfacher Healthcheck `{ "status": "ok" }`.
-- Liefert auch das Frontend:
-  - `/` und `/index.html` -> `index.html`
-  - `/App.jsx` -> React-App (MIME: application/javascript)
+- Liefert auch das Frontend aus `frontend/`:
+  - `/` und `/index.html` -> `frontend/index.html`
+  - `/App.jsx` -> `frontend/App.jsx` (MIME: application/javascript)
 
-## Frontend (`App.jsx`)
+## Frontend (`frontend/App.jsx`)
 - Dark-Mode SPA mit KPI-Leiste, Matrix, Balken-Chart, Szenario-Panel, Detailtabelle.
 - Alle Komponenten und State in einer Datei; keine Bundler, kein Routing.
-- Szenario-Logik nur im Browser (Fake-Rechnung, aber plausibel) mit Volumen-Slider und grobem CHF-Impact.
+- Szenario-Logik per Backend-Endpoint (Volumen-Slider, Deckungsgrad/Marktanteil/CHF-Impact, verschobene Forecast-Linie).
 - `API_BASE` folgt automatisch der aktuellen Origin (`window.location.origin`), ein Port (8000) genügt.
 
 ## UI-Flow (High-Level)
@@ -52,14 +57,14 @@ project-root/
 
 2) Start per Skript:
 ```bash
-./start.sh
+./infra/start.sh
 ```
-Das Skript räumt Port 8000 frei, startet uvicorn und öffnet (auf macOS, falls `open` vorhanden) den Browser. Frontend + API unter `http://localhost:8000` erreichbar.
+Das Skript räumt Port 8000 frei, installiert `backend/requirements.txt`, startet uvicorn und öffnet (auf macOS, falls `open` vorhanden) den Browser. Frontend + API unter `http://localhost:8000` erreichbar.
 
 3) Alternativ manuell:
 ```bash
-pip install -r requirements.txt
-python3 -m uvicorn backend:app --reload --port 8000
+pip install -r backend/requirements.txt
+python3 -m uvicorn backend.main:app --reload --port 8000
 ```
 Dann im Browser `http://localhost:8000/index.html` aufrufen.
 
@@ -93,7 +98,7 @@ Dann im Browser `http://localhost:8000/index.html` aufrufen.
 - `GET /api/chart` – Daten für das Balken-Chart: je Leistungsgruppe `planned_demand_cases`, `own_hospital_cases`, `other_hospitals_cases`.
 
 ## Entwicklungshinweise
-- Backend-Logik und Demo-Daten liegen in `backend.py`.
-- Szenario-Logik und Visualisierung liegen komplett in `App.jsx`.
+- Backend-Logik und Demo-Daten liegen in `backend/main.py`.
+- Szenario-Logik und Visualisierung liegen komplett in `frontend/App.jsx`.
 - CORS offen für lokale Frontend-Hosts.
 - MVP-Charakter: bewusste Vereinfachungen, Fokus auf Storytelling und UI-Flow.

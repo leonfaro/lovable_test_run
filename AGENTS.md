@@ -1,20 +1,22 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `mvp_app/` contains the Streamlit MVP: `app.py` (UI), `simulate.py` (synthetic data), `logic.py` (Ampel heuristics), `kpis.py` (aggregations), `utils.py` (helpers), and `README.md` for operator notes.
+- `backend/` contains the FastAPI demo backend (`main.py`, `requirements.txt`, `server.py` as shim).
+- `frontend/` holds the Single-File React app (`App.jsx`) plus `index.html`.
+- `infra/` contains start/ops scripts (e.g., `start.sh`).
 - `MVP.md` and `Protokoll_Startup_Kapazitaetsplanung.md` capture product vision and founding meeting context; keep them in sync with any functional changes.
 - `Makefile` exposes a convenience `run` target; extend it with new automation (tests, lint) when added.
 
 ## Build, Test, and Development Commands
 - `./.venv/bin/python -m pip install --upgrade pip` keeps the virtualenv tooling current (run after creating the venv).
-- `pip install -r mvp_app/requirements.txt` installs runtime dependencies.
-- `make run` (or `./.venv/bin/streamlit run mvp_app/app.py`) launches the dashboard at `http://localhost:8501`.
-- `python3 -m compileall mvp_app` is the lightweight smoke check for syntax after edits; use it before pushing.
+- `pip install -r backend/requirements.txt` installs runtime dependencies.
+- `make run` (or `./infra/start.sh`) launches backend + frontend together on port 8000.
+- `python3 -m compileall backend` is the lightweight smoke check for syntax after edits; use it before pushing.
 
 ## Coding Style & Naming Conventions
 - Follow PEP 8: 4-space indentation, snake_case for functions/variables, PascalCase for classes. Keep line length ≤ 100 chars.
 - Modules should expose explicit `__all__` lists when intended for import; maintain docstrings at the module top explaining purpose.
-- When adding assets or configs, store them inside `mvp_app/` under descriptive subfolders (`assets/`, `data/`).
+- When adding assets or configs, keep them inside `frontend/` (e.g., `assets/`, `data/`) or `backend/` as appropriate.
 
 ## Testing Guidelines
 - No formal test suite exists yet. When introducing logic, add targeted tests (e.g., `tests/test_simulate.py`) using `pytest` and wire them via a `make test` target.
