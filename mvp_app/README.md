@@ -1,59 +1,99 @@
-# Kapazitätsplanung MVP (Streamlit)
+# Rang 5 – Spitalliste & Leistungsauftrag-Cockpit  
+## MVP DEMO – Architektur & UI-Spezifikation (Single Python / Single React)
 
-Dieses MVP demonstriert das im Dokument `MVP.md` beschriebene Dashboard für ein strategisch-taktisches Kapazitätsmanagement im Krankenhaus. Die App simuliert synthetische Daten, visualisiert Plan- und Prognosekurven, stellt eine Ampel-Heatmap mit Handlungsempfehlungen bereit und fasst zentrale IKM-Kennzahlen zusammen.
+> **Ziel:** Ein visuell starkes, „fertig wirkendes“ Demo-MVP für GL/CEO.  
+> Look & Feel wie ein modernes SaaS-Produkt (Dark Mode, Micro-Interactions).  
+> Technisch minimal: **1 Python-File, 1 React-File, Fake-Daten.**
 
-## Funktionsumfang
+## Scope & Prinzipien
+- Verkaufsdemo, kein PoC, keine echten Daten.
+- Architektur:
+  - `backend.py` – Python Mini-API mit statischen JSON-Daten, liefert auch das Frontend aus.
+  - `App.jsx` – Single-File-React-App (alle Komponenten in einer Datei).
+- UX-Fokus: Dark Mode, weiche Gradients, Glassmorphism-Cards, klarer Story-Flow („Wo sind wir über/unterversorgt?“ → „Wie groß ist das Problem?“).
 
-- Jahresverlauf mit Plan-, Prognose- und Kapazitätslinie je Ressource.
-- Ampel-Heatmap (KW × Ressource) inkl. Empfehlungen nach Ampellogik.
-- Einstellungs-Panel für interne/externe Treiber, Datenrhythmus und Schwellenwerte.
-- KPI-Kacheln (Auslastung, MAPE, Wartetage, Stornoquote, Pflege-Engpass) und Top-Treiber.
-- Wochen-Sparkline zur schnellen Trendprüfung.
-- Downloads: CSV-Export (Plan/Prognose/Capacity + Treiber) und SVG-Export der Liniengrafik.
+## Projektstruktur
+```
+project-root/
+  backend.py
+  App.jsx
+  index.html
+  README.md
+  requirements.txt
+  start.sh
+  server.py  # nur Shim, Haupt-App ist backend.py
+```
 
-## Installation & Start
+## Backend (`backend.py`)
+- FastAPI, in-memory Demo-Daten, keine DB, keine echten Spitallisten.
+- Endpunkte (alle GET):
+  - `/api/dashboard` – KPI-Ebene + Meta (Region, Planperiode).
+  - `/api/matrix` – Matrix je Leistungsgruppe (Bedarf, Fälle, Marktanteil, Deckungsgrad, Status, Auftrag).
+  - `/api/chart` – Daten für Balken-Chart „Fälle vs. Bedarf“ (Plan vs. eigenes Haus vs. andere Häuser).
+  - `/health` – einfacher Healthcheck `{ "status": "ok" }`.
+- Liefert auch das Frontend:
+  - `/` und `/index.html` -> `index.html`
+  - `/App.jsx` -> React-App (MIME: application/javascript)
 
-1. Python ≥ 3.10 verwenden.
-2. Abhängigkeiten installieren:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Streamlit-App starten:
-   ```bash
-   streamlit run app.py
-   ```
-4. Die Anwendung öffnet sich im Browser unter `http://localhost:8501`.
+## Frontend (`App.jsx`)
+- Dark-Mode SPA mit KPI-Leiste, Matrix, Balken-Chart, Szenario-Panel, Detailtabelle.
+- Alle Komponenten und State in einer Datei; keine Bundler, kein Routing.
+- Szenario-Logik nur im Browser (Fake-Rechnung, aber plausibel) mit Volumen-Slider und grobem CHF-Impact.
+- `API_BASE` folgt automatisch der aktuellen Origin (`window.location.origin`), ein Port (8000) genügt.
 
-## Bedienung
+## UI-Flow (High-Level)
+- 1. Versorgungsbild: KPI-Karten & Matrix zeigen Unter-/Überversorgung & Marktanteile.
+- 2. Struktur: Balken-Chart „Fälle vs. Bedarf“ macht das Volumenbild sichtbar.
+- 3. Szenario: Slider Ausbau/Rückzug, Impact auf Deckungsgrad & CHF sehen.
+- 4. Detail: Tabelle mit allen Leistungsgruppen im Überblick.
 
-- **Einstellungen (linke Sidebar):**
-  - Interne Faktoren (Verweildauer, OP-Zeiten, Patient-Pflege-Ratio, Abwesenheiten, Cluster).
-  - Externe Faktoren (Saisonalität, Grippe-/Epidemie-Index, Wetter-/Unfalltreiber).
-  - Datenrhythmus (wöchentlich oder monatlich) für die Assimilation der Ist-Zahlen in die Prognose.
-  - Ampel-Schwellen (`Grün`-Puffer und Schwelle für `Gelb`).
-  - Button **Standardwerte** setzt alle Parameter zurück. **Prognose aktualisieren** erzwingt einen Re-Run mit neuen Zufallszahlen (Seed-kontrolliert).
+## Setup & Start (Ein-Port)
+1) Anforderungen: Python >= 3.10 (Node optional, React per ES-Module/CDN).
 
-- **Jahresplanung:** Interaktive SVG-Linie (Plan, Prognose, Kapazität) je Ressource. Download als SVG sowie KPI-Kacheln zur aktuellen Woche.
+2) Start per Skript:
+```bash
+./start.sh
+```
+Das Skript räumt Port 8000 frei, startet uvicorn und öffnet (auf macOS, falls `open` vorhanden) den Browser. Frontend + API unter `http://localhost:8000` erreichbar.
 
-- **Prognose & Steuerung:** Ampel-Heatmap mit Verdichtung nach Kalenderwochen, Empfehlungen nach Kritikalität, Wochen-Sparkline und Top-Treiber.
+3) Alternativ manuell:
+```bash
+pip install -r requirements.txt
+python3 -m uvicorn backend:app --reload --port 8000
+```
+Dann im Browser `http://localhost:8000/index.html` aufrufen.
 
-## Ampellogik & Empfehlungen
+## Debugging / Fehlersuche
+- **Server startet nicht / Port blockiert:**
+  - Prüfen: `lsof -i :8000`
+  - `start.sh` räumt Port 8000 vor dem Start; falls nötig, Prozesse manuell killen: `kill -9 <PID>`.
+- **Weiße Seite im Browser:**
+  - DevTools öffnen (Chrome: Cmd+Option+I / Ctrl+Shift+I).
+  - Console-Tab: Fehlermeldungen zu `App.jsx` oder JS-Modul?
+  - Network-Tab: Laden `index.html` / `App.jsx` erfolgreich (200, `application/javascript`)? API-Calls zu `/api/dashboard`, `/api/matrix`, `/api/chart` mit 200?
+- **API-Fehler / 4xx / 5xx:**
+  - Uvicorn-Konsole prüfen auf Tracebacks.
+  - Endpunkte testen:
+    ```bash
+    curl http://localhost:8000/api/dashboard
+    curl http://localhost:8000/api/matrix
+    curl http://localhost:8000/api/chart
+    curl http://localhost:8000/health
+    ```
+- **Typische Fehlerbilder:**
+  - UI zeigt „Lade Demo-Daten…“ dauerhaft: API nicht erreichbar (Server nicht gestartet, falscher Port, CORS-Problem).
+  - HTTP-Fehler beim Laden von `App.jsx` / `index.html`: Routen prüfen (`/App.jsx`, `/index.html`), MIME-Type `application/javascript` für `.jsx`.
+  - CORS-Fehler: API auf anderer Origin; im Ein-Port-Setup sollte das nicht auftreten.
+- **Healthcheck / Smoke-Test:**
+  - `curl http://localhost:8000/health` sollte `{ "status": "ok" }` liefern.
 
-- Normierter Gap: `(Prognose − Kapazität) / Kapazität`.
-- Schwellen (Standard):
-  - `|Norm-Gap| < 0.05` → Grün (stabil)
-  - `0.05 ≤ Norm-Gap < 0.15` → Gelb (Beobachtung, leichte Maßnahmen)
-  - `Norm-Gap ≥ 0.15` → Rot (kritisch, starke Maßnahmen)
-  - Negative Abweichungen unterhalb des Schwellenwertes → Blau (Überkapazität, Entlastung möglich)
-- Empfehlungen basieren auf heuristischen Regeln (OP-Verschiebung, Betten öffnen/schließen, Pflege-Schichten umplanen etc.) und berücksichtigen die Patient-Pflege-Ratio.
+## API
+- `GET /api/dashboard` – liefert oberste KPI-Ebene und Meta (z. B. Region, Planperiode).
+- `GET /api/matrix` – pro Leistungsgruppe: geplanter Bedarf, Fälle aller Häuser, Fälle eigenes Haus, Marktanteil, Deckungsgrad, Status (`under/balanced/over`), `has_assignment`.
+- `GET /api/chart` – Daten für das Balken-Chart: je Leistungsgruppe `planned_demand_cases`, `own_hospital_cases`, `other_hospitals_cases`.
 
-## Daten & Grenzen
-
-- Vollständig synthetische Daten mit seedbarem PRNG, Kombination aus Trends, Saison, internen und externen Treibern.
-- Assimilation der Ist-Zahlen wöchentlich oder monatlich via exponentiellem Glättungsanteil (`α = 0.3`).
-- Low-fi Visualisierung (Grau-Schema + Ampelfarben), keine externen CDNs oder Fonts.
-- MVP-Status: Kein Persistenzspeicher, keine Benutzerverwaltung, keine Schnittstellen (HL7/FHIR), keine Echtzeit-Daten.
-
-## Lizenz
-
-MIT License – frei zur Verwendung, Anpassung und Weitergabe.
+## Entwicklungshinweise
+- Backend-Logik und Demo-Daten liegen in `backend.py`.
+- Szenario-Logik und Visualisierung liegen komplett in `App.jsx`.
+- CORS offen für lokale Frontend-Hosts.
+- MVP-Charakter: bewusste Vereinfachungen, Fokus auf Storytelling und UI-Flow.

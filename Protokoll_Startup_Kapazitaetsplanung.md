@@ -1,7 +1,7 @@
 # Protokoll des Gründungs-Meetings: Start‑up für Kapazitätsplanung im Gesundheitswesen
 
 **Datum:** (bitte ergänzen) &nbsp;&nbsp;|&nbsp;&nbsp; **Ort:** Zürich  
-**Teilnehmende:** Dr. med. Selina (Vetterli, Roth & Partner, VRP), Léon Kia Faro (Statistiker), Stephan Nef (Informatiker, IBM)  
+**Teilnehmende:** Dr. med. Selina Schwegler (Vetterli, Roth & Partner, VRP), Léon Kia Faro (Statistiker), Stephan Nef (Informatiker, IBM)  
 **Ziel des Meetings:** Abklärung der Gründung eines Start‑ups im Bereich **Kapazitäts‑/Ressourcenplanung** für Krankenhäuser: Produktidee, Wettbewerb, MVP‑Plan, Go‑to‑Market, USP, technische Machbarkeit, nächste Schritte.
 
 ---
@@ -111,7 +111,7 @@ Beispiele: **Wetter/Schnee** (Unfallrisiko), **Grippe‑/Epidemietrends** (Sucha
 1. **Produkt‑Stoßrichtung bestätigt:** Kapazitäts‑Co‑Pilot mit **alternativen Daten** als USP; **komplementärer Markteintritt**.  
 2. **Zwei Sofortartefakte:** **Pitch‑Deck** + **MVP/Demo** (synthetische Daten, klare Story).  
 3. **Pilot‑/Partnerpfad:** Anbahnung eines **Pilotspitals** (VRP‑Netzwerk/Uni‑Kontakt) und Sondierung **Datenpartner** (Wetter, Apotheke etc.).  
-4. **Teamrollen (vorläufig):** Léon = Tech/Analytics & MVP, Stephan = Orga/Partner/Mentoren, Selina = Klinik‑Use‑Cases/VRP‑Brücke.  
+4. **Teamrollen (vorläufig):** Léon = Tech/Analytics & MVP, Stephan = Orga/Partner/Mentoren, Selina Schwegler = Klinik‑Use‑Cases/VRP‑Brücke.  
 
 ---
 
@@ -122,7 +122,7 @@ Beispiele: **Wetter/Schnee** (Unfallrisiko), **Grippe‑/Epidemietrends** (Sucha
 | 1 | **Pitch‑Deck** (Problem, Lösung/USP, Markt, Team, Plan) | v1‑Deck (10–14 Slides) | Stephan (Koord.), alle | **T+7–10 Tage** |
 | 2 | **MVP/Demo bauen** | Klick‑Demo: Prognose + Ampel + 1–2 Szenarien | Léon (Lead), Stephan | **v0 in T+2 Tagen**, v1 in **T+2–3 Wo.** |
 | 3 | **Mentor‑Termin (Andy/Tom)** | Feedback, Messe‑Teilnahme klären | Stephan | nach Deck v1 |
-| 4 | **Pilotspital sondieren** | Gespräch/Letter of Intent | Selina (+ Stephan) | **T+4–6 Wo.** |
+| 4 | **Pilotspital sondieren** | Gespräch/Letter of Intent | Selina Schwegler (+ Stephan Nef) | **T+4–6 Wo.** |
 | 5 | **Datenpartner anfragen** | Machbarkeits‑/Lizenz‑Klarheit | Léon | **parallel ab sofort** |
 | 6 | **Firmengründung vorbereiten** | Rechtsform, Cap‑Table, Basic Ops | Stephan | **T+3–4 Wo.** |
 | 7 | **Regulatorik‑Vorcheck** | Datenschutz, IT‑Policies, ISO‑Roadmap | Stephan (mit Experten) | **T+6–8 Wo.** |
@@ -154,5 +154,5 @@ Beispiele: **Wetter/Schnee** (Unfallrisiko), **Grippe‑/Epidemietrends** (Sucha
 **Kontakt & Verantwortlichkeiten (aktuell):**  
 - **Léon Kia Faro** – Tech/Analytics & MVP (E2E‑Prototyping)  
 - **Stephan Nef** – Organisation/Partner/Mentoren/Operations  
-- **Dr. med. Selina (VRP)** – Klinische Use‑Cases, Change & Zugang Spitäler
+- **Dr. med. Selina Schwegler (VRP)** – Klinische Use‑Cases, Change & Zugang Spitäler
 
