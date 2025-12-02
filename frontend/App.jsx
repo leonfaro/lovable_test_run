@@ -1117,7 +1117,11 @@ function App() {
 }
 
 const host =
+  // Preferred: marketing landing page placeholder
+  document.getElementById("demo-root") ||
+  // Fallback: legacy root for standalone demo
   document.getElementById("root") ||
+  // Last resort: create root dynamically
   (() => {
     const el = document.createElement("div");
     el.id = "root";
