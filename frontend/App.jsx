@@ -682,7 +682,7 @@ function DetailTable({ rows, query, onQuery }) {
   `;
 }
 
-function ScenarioPanel({ row, scenarioRow, delta, setDelta, mode, setMode, horizon, setHorizon }) {
+function ScenarioPanel({ row, scenarioRow, delta, setDelta, mode, setMode }) {
   const modeButtons = [
     { id: "statusquo", label: "Status quo", preset: 0 },
     { id: "ausbau", label: "Ausbau", preset: 15 },
@@ -731,13 +731,6 @@ function ScenarioPanel({ row, scenarioRow, delta, setDelta, mode, setMode, horiz
             onChange=${(e) => setDelta(Number(e.target.value))}
             style=${{ width: "100%" }}
           />
-        </label>
-        <label>
-          Zeithorizont
-          <select value=${horizon} onChange=${(e) => setHorizon(e.target.value)}>
-            <option value="3">3 Jahre</option>
-            <option value="5">5 Jahre</option>
-          </select>
         </label>
       </div>
 
@@ -800,7 +793,6 @@ function App() {
   });
   const [scenarioDelta, setScenarioDelta] = useState(0);
   const [scenarioMode, setScenarioMode] = useState("statusquo");
-  const [scenarioHorizon, setScenarioHorizon] = useState("3");
   const [detailQuery, setDetailQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1108,8 +1100,6 @@ function App() {
           setDelta=${setScenarioDelta}
           mode=${scenarioMode}
           setMode=${setScenarioMode}
-          horizon=${scenarioHorizon}
-          setHorizon=${setScenarioHorizon}
         />
       </div>
 
